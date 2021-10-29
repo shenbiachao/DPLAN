@@ -74,18 +74,15 @@ class DQNAgent(nn.Module):
         q_current_values = self.q_network(state_batch)
         q_current = torch.gather(q_current_values, 1, action_batch)
         loss = F.mse_loss(q_target, q_current)
-        loss_val = loss.detach().cpu().numpy()
         self.q_optimizer.zero_grad()
         loss.backward()
         self.q_optimizer.step()
         self.tot_num_updates += 1
         self.try_update_target_network()
 
-        return {"loss/mse": loss_val}
-
     def try_update_target_network(self):
         if self.tot_num_updates % self.update_target_network_interval == 0:
-            common.soft_update_network(self.q_network, self.q_target_network, self.tau)
+            common.hard_update_network(self.q_network, self.q_target_network)
 
     def select_action(self, obs):
         ob = obs.clone().detach().to(config.device).unsqueeze(0).float()

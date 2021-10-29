@@ -6,8 +6,6 @@ from common import Logger
 from common import set_device_and_logger, set_global_seed
 from dqn_trainer import TDReplayBuffer
 from environment import Environment
-import config
-import pandas as pd
 
 
 @click.command(context_settings=dict(
@@ -17,7 +15,7 @@ import pandas as pd
 @click.option("--log-dir", default="logs")
 @click.option("--gpu", type=int, default=0)
 @click.option("--print-log", type=bool, default=True)
-@click.option("--seed", type=int, default=2)
+@click.option("--seed", type=int, default=3)
 @click.option("--info", type=str, default="")
 def main(log_dir, gpu, print_log, seed, info):
     # set global seed
@@ -34,7 +32,7 @@ def main(log_dir, gpu, print_log, seed, info):
 
     # load data
     logger.log_str("Loading Data")
-    dataset_a, dataset_u, dataset_test, test_label = loader.load_cov()
+    dataset_a, dataset_u, dataset_test, test_label = loader.load_ann()
 
     # initialize environment
     logger.log_str("Initializing Environment")
@@ -50,8 +48,10 @@ def main(log_dir, gpu, print_log, seed, info):
     logger.log_str("Initializing Agent")
     agent = DQNAgent(env.obs_dim, env.action_dim)
 
-    env.refresh(agent.q_network)
-    eval_env.refresh(agent.q_network)
+    env.refresh_net(agent.q_network)
+    eval_env.refresh_net(agent.q_network)
+    env.refresh_iforest(agent.q_network)
+    eval_env.refresh_iforest(agent.q_network)
 
     # initialize trainer
     logger.log_str("Initializing Trainer")

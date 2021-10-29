@@ -18,6 +18,7 @@ class Environment():
 
         self.clf = IsolationForest(contamination=config.contamination_rate)
         self.mapped = torch.tensor([])
+        self.target_net = None
         self.net = None
 
         self.obs_dim = self.current_data.size()[0]
@@ -29,18 +30,21 @@ class Environment():
 
         self.clf = IsolationForest(contamination=config.contamination_rate)
         self.mapped = torch.tensor([])
-        self.refresh(self.net)
+        self.refresh_iforest(self.net)
 
         return self.current_data
 
-    def refresh(self, net):
+    def refresh_net(self, net):
         self.net = net
+
+    def refresh_iforest(self, net):
+        self.target_net = net
         with torch.no_grad():
             self.mapped = net.map(self.dataset_u).cpu()
         self.clf.fit(self.mapped)
 
     def intrinsic_reward(self):
-        target = self.net.map(self.current_data)
+        target = self.target_net.map(self.current_data)
         score = -self.clf.score_samples(target.detach().cpu().numpy().reshape(1, -1))
 
         return score
@@ -67,32 +71,14 @@ class Environment():
         if action == 0:
             max_dist = -float('inf')
             for ind in candidate:
-                dist = np.linalg.norm(mapped_current - self.mapped[ind])
+                dist = np.linalg.norm(mapped_current - self.net.map(self.dataset_u[ind]).detach().cpu())
                 if dist > max_dist:
                     max_dist = dist
                     self.current_data = self.dataset_u[ind]
         else:
             min_dist = float('inf')
             for ind in candidate:
-                dist = np.linalg.norm(mapped_current - self.mapped[ind])
-                if dist < min_dist and dist != 0:
-                    min_dist = dist
-                    self.current_data = self.dataset_u[ind]
-
-    def sample_method_warmup(self, action):
-        self.current_class = 1
-        candidate = np.random.choice([i for i in range(len(self.dataset_u))], size=config.sample_num, replace=False)
-        if action == 0:
-            max_dist = -float('inf')
-            for ind in candidate:
-                dist = np.linalg.norm(self.current_data.cpu() - self.dataset_u[ind].cpu())
-                if dist > max_dist:
-                    max_dist = dist
-                    self.current_data = self.dataset_u[ind]
-        else:
-            min_dist = float('inf')
-            for ind in candidate:
-                dist = np.linalg.norm(self.current_data.cpu() - self.dataset_u[ind].cpu())
+                dist = np.linalg.norm(mapped_current - self.net.map(self.dataset_u[ind]).detach().cpu())
                 if dist < min_dist and dist != 0:
                     min_dist = dist
                     self.current_data = self.dataset_u[ind]

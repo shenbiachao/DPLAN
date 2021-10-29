@@ -1,10 +1,14 @@
 import pandas as pd
 import config
 import torch
+import random
+from sklearn.utils import shuffle
+import numpy as np
 
 
 def load_ann():
     source = pd.read_csv("./data/ann.csv")
+    source = shuffle(source)
     length = len(source)
     width = source.shape[1]
     dataset_train = source.iloc[:int(length*config.train_percentage), :]
@@ -12,7 +16,7 @@ def load_ann():
     dataset_a = pd.DataFrame(columns=source.columns)
     dataset_u = pd.DataFrame(columns=source.columns)
     for i in range(len(dataset_train)):
-        label = source.iloc[i, width-1]
+        label = dataset_train.iloc[i, width-1]
         if label == config.ann_anomaly_class and len(dataset_a) < config.anomaly_num:
             dataset_a = dataset_a.append(dataset_train.iloc[i, :])
         else:
@@ -45,6 +49,7 @@ def load_ann():
 
 def load_har():
     source = pd.read_csv("./data/har.csv")
+    source = shuffle(source)
     width = source.shape[1]
     class_two = pd.DataFrame(columns=source.columns)
     class_three = pd.DataFrame(columns=source.columns)
@@ -66,7 +71,7 @@ def load_har():
     dataset_a = pd.DataFrame(columns=source.columns)
     dataset_u = pd.DataFrame(columns=source.columns)
     for i in range(len(dataset_train)):
-        label = source.iloc[i, width-1]
+        label = dataset_train.iloc[i, width-1]
         if label == config.har_anomaly_class and len(dataset_a) < config.anomaly_num:
             dataset_a = dataset_a.append(dataset_train.iloc[i, :])
         else:
@@ -98,15 +103,17 @@ def load_har():
 
 
 def load_cov():
-    source = pd.read_csv("./data/cov.csv")
+    source = pd.read_csv("./data/cov.csv", header=None, dtype=np.float)
+    source = shuffle(source)
     length = len(source)
     width = source.shape[1]
     dataset_train = source.iloc[:int(length*config.train_percentage), :]
     dataset_test = source.iloc[int(length*config.train_percentage):, :]
     dataset_a = pd.DataFrame(columns=source.columns)
     dataset_u = pd.DataFrame(columns=source.columns)
-    for i in range(len(dataset_train)):
-        label = source.iloc[i, width-1]
+    for series in range(10000):
+        i = random.randint(0, len(dataset_train) - 1)
+        label = dataset_train.iloc[i, width-1]
         if label == config.cov_anomaly_class and len(dataset_a) < config.anomaly_num:
             dataset_a = dataset_a.append(dataset_train.iloc[i, :])
         elif label == 2 or label == 4 or label == 6:

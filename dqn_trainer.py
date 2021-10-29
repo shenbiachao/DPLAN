@@ -154,7 +154,6 @@ class DQNTrainer:
         self.logger = logger
 
         self.batch_size = config.batch_size
-        self.num_updates_per_ite = config.num_updates_per_iteration
         self.num_steps_per_iteration = config.num_steps_per_iteration
         self.num_test_trajectories = config.num_test_trajectories
         self.max_iteration = config.max_iteration
@@ -163,7 +162,6 @@ class DQNTrainer:
         self.log_interval = config.log_interval
         self.start_timestep = config.start_timestep
         self.anneal_rate = (config.init_epsilon - config.final_epsilon) / self.num_steps_per_iteration
-        self.refresh_interval = config.refresh_interval
 
     def train(self):
         train_traj_rewards = []
@@ -193,12 +191,12 @@ class DQNTrainer:
                 if tot_env_steps < self.start_timestep:
                     continue
 
-                for up in range(self.num_updates_per_ite):
-                    data_batch = self.buffer.sample_batch(self.batch_size)
-                    self.agent.update(data_batch)
+                data_batch = self.buffer.sample_batch(self.batch_size)
+                self.agent.update(data_batch)
 
-                if tot_env_steps % self.refresh_interval == 0:
-                    self.env.refresh(self.agent.q_network)
+                self.env.refresh_net(self.agent.q_network)
+
+            self.env.refresh_iforest(self.agent.q_network)
 
             state = self.env.reset()
             train_traj_rewards.append(traj_reward)
@@ -215,7 +213,7 @@ class DQNTrainer:
                 self.logger.log_var("return/auc_roc", auc_roc, tot_env_steps)
                 self.logger.log_var("return/auc_pr", auc_pr, tot_env_steps)
                 self.logger.log_var("return/acc", acc, tot_env_steps)
-                remaining_seconds = int((self.max_iteration - ite) * np.mean(iteration_durations[-10:]))
+                remaining_seconds = int((self.max_iteration - ite) * np.mean(iteration_durations[-3:]))
                 time_remaining_str = second_to_time_str(remaining_seconds)
                 summary_str = "iteration {}/{}:\ttrain return {:.02f}\ttest return {:02f}\tauc_roc {:02f}\tauc_pr {:02f}\tacc {:02f}\teta: {}".format(
                     ite, self.max_iteration, train_traj_rewards[-1], avg_test_reward, auc_roc, auc_pr, acc, time_remaining_str)
@@ -241,7 +239,6 @@ class DQNTrainer:
 
     def evaluate(self):
         q_values = self.agent.q_network(self.env.dataset_test)
-        self.logger.log_str(str(q_values[0]))
         anomaly_score = q_values[:, 1]
         _, action_indices = torch.max(q_values, dim=1)
         auc_roc = roc_auc_score(self.env.test_label, anomaly_score.cpu().detach())

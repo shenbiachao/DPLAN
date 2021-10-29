@@ -13,21 +13,19 @@ anomaly_num = 60
 
 # dqn_trainer
 batch_size = 32
-num_updates_per_iteration = 1
 num_steps_per_iteration = 2000
 log_interval = 1
 num_test_trajectories = 1
-max_iteration = 20
+max_iteration = 30
 init_epsilon = 1
 final_epsilon = 0.1
 save_model_interval = 1
 start_timestep = 10000
 max_buffer_size = 100000
-refresh_interval = 20
 
 # dqn_agent
 device = 'cuda'
-update_target_network_interval = 100
+update_target_network_interval = 10000
 gamma = 0.99
 tau = 0.5
 n = 1

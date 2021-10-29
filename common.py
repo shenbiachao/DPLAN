@@ -36,7 +36,7 @@ def second_to_time_str(remaining:int):
 
 
 class Logger():
-    def __init__(self, log_path, tb_dir="tb_logs", prefix="", warning_level=3, print_to_terminal=True):
+    def __init__(self, log_path, prefix="", warning_level=3, print_to_terminal=True):
         unique_path = self.make_simple_log_path(prefix)
         log_path = os.path.join(log_path, unique_path)
         self.log_path = log_path
